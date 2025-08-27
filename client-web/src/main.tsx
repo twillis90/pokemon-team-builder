@@ -3,6 +3,7 @@ import "./index.css";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 
 import AppLayout from "./layouts/AppLayout";
+import AuthedLayout from "./layouts/AuthedLayout"; // ⬅️ add this
 import Badges from "./pages/Badges";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
@@ -14,12 +15,20 @@ import { store } from "./store";
 
 const router = createBrowserRouter([
   {
-    element: <AppLayout />, // header + footer wrapper
+    element: <AppLayout />, // header + footer wrapper (yours)
     children: [
+      // public
       { path: "/", element: <Login /> },
-      { path: "/builder", element: <TeamBuilder /> },
-      { path: "/profile", element: <Profile /> },
-      { path: "/badges", element: <Badges /> },
+
+      // authed area (persistent right sidebar lives in AuthedLayout)
+      {
+        element: <AuthedLayout />, // ⬅️ sidebar + <Outlet/>
+        children: [
+          { path: "/builder", element: <TeamBuilder /> },
+          { path: "/profile", element: <Profile /> },
+          { path: "/badges", element: <Badges /> },
+        ],
+      },
     ],
   },
 ]);
