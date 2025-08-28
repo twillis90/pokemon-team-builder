@@ -16,8 +16,10 @@ export default function AuthedLayout() {
           </main>
 
           <aside className="hidden lg:block">
-            <div className="sticky top-4 h-[calc(100vh-2rem)] rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-sm">
-              <h2 className="text-lg font-semibold mb-3">Your Teams</h2>
+          <div className="relative overflow-hidden sticky top-4 h-[calc(100vh-2rem)] rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-sm">
+          <div className="absolute inset-x-0 top-0 h-4 bg-red-600" />
+          <div className="absolute inset-x-0 top-2 h-2 bg-white/70" />
+            <h2 className="text-lg font-semibold mb-3">Your Teams</h2>
               <p className="text-sm text-slate-400">Sidebar placeholder…</p>
             </div>
           </aside>
