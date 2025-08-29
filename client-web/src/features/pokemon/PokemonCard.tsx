@@ -4,23 +4,26 @@ type Props = {
   id: number;
   name: string;
   sprite: string;
+  onClick?: () => void;
 };
 
 function capitalize(s: string) {
   return s.length ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
-export default function PokemonCard({ id, name, sprite }: Props) {
+export default function PokemonCard({ id, name, sprite, onClick }: Props) {
   const { data, isLoading, isError } = useGetPokemonByNameQuery(name);
 
   const typesLabel =
     data?.types?.map((t) => capitalize(t.type.name)).join(" / ") ?? "—";
+
 
   return (
     <div
       className="h-full flex flex-col justify-between rounded-xl border border-slate-800 bg-slate-950 p-3 shadow-sm"
       role="article"
       aria-label={`${name} card`}
+      onClick={onClick}
     >
       {/* sprite area */}
       <div className="flex items-center justify-center">

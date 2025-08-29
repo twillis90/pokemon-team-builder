@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import { useGetPokemonIdsByTypeQuery, useListAllPokemonQuery } from "../services/pokeApi";
 
+import Modal from "../components/common/Modal";
 import PokemonCard from "../features/pokemon/PokemonCard";
 import SearchControls from "../features/search/SearchControls";
+import { selectUser } from "../user/userSlice";
 import { skipToken } from "@reduxjs/toolkit/query";
+import { useSelector } from "react-redux";
 
 export default function TeamBuilder() {
   const { data, isLoading, error } = useListAllPokemonQuery();
+  const user = useSelector(selectUser);
   const [query, setQuery] = useState<string>("");
   const [searchMode, setSearchMode] = useState<"name" | "type">("name");
   const [page, setPage] = useState<number>(1);
@@ -14,6 +18,8 @@ export default function TeamBuilder() {
   const start = (page - 1) * pageSize;
   const end = page * pageSize;
   const [debouncedQuery, setDebouncedQuery] = useState(query);
+  const [pokemonToAdd, setPokemonToAdd] = useState<{ id: number; name: string } | null>(null);
+  const [addPokemonModal, setAddPokemonModal] = useState<boolean>(false);
 
   
   const normalizedQuery = debouncedQuery.trim().toLowerCase();
@@ -60,6 +66,17 @@ export default function TeamBuilder() {
   
     return () => clearTimeout(timer);
   }, [query]);
+
+  const openAddModal = (p: { id: number; name: string }) => {
+    setPokemonToAdd(p);
+    setAddPokemonModal(true);
+  };
+
+  const cancelAdd = () => {
+    setPokemonToAdd(null);
+    setAddPokemonModal(false);
+  }
+
 
   return (
     <div>
@@ -111,12 +128,71 @@ export default function TeamBuilder() {
       {data && (
         <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {pageItems.map((p) => (
+            <div>
             <li key={p.id}>
-              <PokemonCard id={p.id} name={p.name} sprite={p.sprite}/>
+              <PokemonCard 
+                id={p.id} 
+                name={p.name} 
+                sprite={p.sprite}
+                onClick={() => openAddModal(p)}
+              />
             </li>
+            <div>
+            </div>
+            </div>
           ))}
         </ul>
       )}
+            <Modal
+              isOpen={addPokemonModal}
+              onClose={cancelAdd}
+              title="Add to which team?"
+              size="sm"
+            >
+            <div className="space-y-3">
+                <p className="text-slate-300">
+                  Choose a team for <span className="capitalize font-semibold">{pokemonToAdd?.name}</span>
+                </p>
+
+                {(!user || user.teams.length === 0) ? (
+                  <p className="text-slate-400">No teams yet.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {user.teams.map((team) => (
+                      <li key={team.id}>
+                        <button
+                          type="button"
+                          // next step will dispatch add-to-team here
+                          onClick={() => {/* TODO: add this Pokémon to team.id */}}
+                          className="w-full text-left rounded-md border border-slate-700 px-3 py-2 hover:bg-slate-800"
+                        >
+                          {team.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <div className="flex justify-between pt-3">
+                  <button
+                    type="button"
+                    // next step will create a new team, then add this Pokémon
+                    onClick={() => {/* TODO: new team then add */}}
+                    className="rounded-md border border-slate-600 px-4 py-2 text-slate-300 hover:bg-slate-800"
+                  >
+                    New team
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={cancelAdd}
+                    className="rounded-md border border-slate-600 px-4 py-2 text-slate-300 hover:bg-slate-800"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+              </Modal>
       </div>
     </div>
   );
