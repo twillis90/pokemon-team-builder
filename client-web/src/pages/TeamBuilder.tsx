@@ -1,3 +1,5 @@
+import { addPokemonToTeam, addTeam, selectTeams, type Team, type TeamPokemon } from "../teams/teamSlice";
+import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { useGetPokemonIdsByTypeQuery, useListAllPokemonQuery } from "../services/pokeApi";
 
@@ -6,11 +8,12 @@ import PokemonCard from "../features/pokemon/PokemonCard";
 import SearchControls from "../features/search/SearchControls";
 import { selectUser } from "../user/userSlice";
 import { skipToken } from "@reduxjs/toolkit/query";
-import { useSelector } from "react-redux";
 
 export default function TeamBuilder() {
   const { data, isLoading, error } = useListAllPokemonQuery();
   const user = useSelector(selectUser);
+  const teams = useSelector(selectTeams);
+  const dispatch = useDispatch();
   const [query, setQuery] = useState<string>("");
   const [searchMode, setSearchMode] = useState<"name" | "type">("name");
   const [page, setPage] = useState<number>(1);
@@ -18,10 +21,8 @@ export default function TeamBuilder() {
   const start = (page - 1) * pageSize;
   const end = page * pageSize;
   const [debouncedQuery, setDebouncedQuery] = useState(query);
-  const [pokemonToAdd, setPokemonToAdd] = useState<{ id: number; name: string } | null>(null);
+  const [pokemonToAdd, setPokemonToAdd] = useState<TeamPokemon | null>(null);
   const [addPokemonModal, setAddPokemonModal] = useState<boolean>(false);
-
-  
   const normalizedQuery = debouncedQuery.trim().toLowerCase();
 
   const typeTerms = normalizedQuery
@@ -67,7 +68,7 @@ export default function TeamBuilder() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const openAddModal = (p: { id: number; name: string }) => {
+  const openAddModal = (p: TeamPokemon) => {
     setPokemonToAdd(p);
     setAddPokemonModal(true);
   };
@@ -76,6 +77,28 @@ export default function TeamBuilder() {
     setPokemonToAdd(null);
     setAddPokemonModal(false);
   }
+
+  const addPokemon = (teamId: string, pokemon: TeamPokemon) => {
+    console.log("adding: ", pokemon.name, "to team: ", teamId);
+    if(pokemonToAdd !== null) {
+    dispatch(addPokemonToTeam({teamId, pokemon}))
+    }
+  }
+
+  const canAddPokemon = (team: Team, pokemon?: TeamPokemon | null) => {
+    if (!pokemon) return false;
+    if (team.pokemon.length >= 6) return false;
+    if (team.pokemon.some(p => p.id === pokemon.id)) return false;
+    return true;
+  };
+
+  const addNewTeam = () => {
+    if (!pokemonToAdd || teams.length >= 8) return;
+    const action = dispatch(addTeam("New Team"));
+    const newId = action.payload.id as string;
+    dispatch(addPokemonToTeam({ teamId: newId, pokemon: pokemonToAdd }));
+    setAddPokemonModal(false);
+  };
 
 
   return (
@@ -154,16 +177,17 @@ export default function TeamBuilder() {
                   Choose a team for <span className="capitalize font-semibold">{pokemonToAdd?.name}</span>
                 </p>
 
-                {(!user || user.teams.length === 0) ? (
+                {(!user || teams.length === 0) ? (
                   <p className="text-slate-400">No teams yet.</p>
                 ) : (
                   <ul className="space-y-2">
-                    {user.teams.map((team) => (
+                    {teams.map((team) => (
                       <li key={team.id}>
                         <button
                           type="button"
+                          disabled={!canAddPokemon(team, pokemonToAdd)}
                           // next step will dispatch add-to-team here
-                          onClick={() => {/* TODO: add this Pokémon to team.id */}}
+                          onClick={() => addPokemon(team.id, pokemonToAdd!)}
                           className="w-full text-left rounded-md border border-slate-700 px-3 py-2 hover:bg-slate-800"
                         >
                           {team.name}
@@ -174,10 +198,12 @@ export default function TeamBuilder() {
                 )}
 
                 <div className="flex justify-between pt-3">
+                {teams.length >= 8 && <p className="text-xs text-slate-400">Max teams reached (8/8).</p>}
                   <button
                     type="button"
+                    disabled={teams.length >= 8}
                     // next step will create a new team, then add this Pokémon
-                    onClick={() => {/* TODO: new team then add */}}
+                    onClick={addNewTeam}
                     className="rounded-md border border-slate-600 px-4 py-2 text-slate-300 hover:bg-slate-800"
                   >
                     New team

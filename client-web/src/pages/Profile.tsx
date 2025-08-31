@@ -1,4 +1,5 @@
-import { addTeam, deleteTeam, editTeam, selectUser, updateUser } from "../user/userSlice";
+import { addTeam, deleteTeam, editTeam, selectTeams } from "../teams/teamSlice";
+import { selectUser, updateUser } from "../user/userSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 
@@ -13,6 +14,7 @@ type ProfileForm = {
 
 export default function Profile() {
   const user = useSelector(selectUser);
+  const teams = useSelector(selectTeams);
   const [editUserOpen, setEditUserOpen] = useState<boolean>(false);
   const [form, setForm] = useState<ProfileForm>({
     displayName: user?.displayName ?? '',
@@ -21,7 +23,7 @@ export default function Profile() {
   const dispatch = useDispatch();
   const [deleteTeamConfirm, setDeleteTeamConfirm] = useState<boolean>(false);
   const [teamToDelete, setTeamToDelete] = useState<string | null>(null);
-  const teamNameToDelete = user?.teams.find(t => t.id === teamToDelete)?.name;
+  const teamNameToDelete = teams.find(t => t.id === teamToDelete)?.name;
   const [editModal, setEditModal] = useState<boolean>(false);
   const [teamToEdit, setTeamToEdit] = useState<string | null>(null);
   const [editTeamName, setEditTeamName] = useState<string>('');
@@ -55,7 +57,7 @@ export default function Profile() {
   };
 
   const handleAddTeam = () => {
-    dispatch(addTeam({ id: crypto.randomUUID(), name: "New Team"}));
+    dispatch(addTeam("New Team"));
   };
 
   const handleDeleteTeam = (id: string) => {
@@ -77,7 +79,7 @@ export default function Profile() {
 
   const handleEditModal = (id: string) => {
     setTeamToEdit(id);
-    const t = user?.teams.find((teamId) => teamId.id === id);
+    const t = teams.find((teamId) => teamId.id === id);
     setEditTeamName(t?.name ?? '');
     setEditModal(true);
   }
@@ -117,11 +119,11 @@ export default function Profile() {
                   className={"px-3 py-1 text-sm font-medium focus:outline-none"} 
                   onClick={handleAddTeam}>Add Team</button>
               </div>
-            {user.teams.length === 0 ? (
+            {teams.length === 0 ? (
               <p className="text-slate-400">No teams yet.</p>
             ) : (
               <div className="space-y-6">
-                {user.teams.map((team) => (
+                {teams.map((team) => (
                   <div key={team.id} className="mb-6">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-lg font-medium text-slate-200">{team.name}</h3>
@@ -150,7 +152,7 @@ export default function Profile() {
                         key={p.id}
                         id={p.id}
                         name={p.name}
-                        sprite={p.sprites.front_default}
+                        sprite={p.sprite}
                       />
                     ))}
                   </div>
@@ -201,7 +203,7 @@ export default function Profile() {
                           <div className="flex justify-end gap-2">
                             <button
                               type="button"
-                              onClick={() => setEditUserOpen(false)}
+                              onClick={() => setEditModal(false)}
                               className="rounded-md border border-slate-600 px-4 py-2 text-slate-300 hover:bg-slate-800"
                             >
                               Cancel

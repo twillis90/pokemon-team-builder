@@ -18,6 +18,7 @@ export type PokeListItem = {
   id: number;
   name: string;
   sprite: string;
+  types: string[]
 };
 
 const SPRITE = (id: number) =>
@@ -51,7 +52,7 @@ export const pokeApi = createApi({
       transformResponse: (resp: PokeListApiResponse) => {
         return resp.results.map(({ name, url }) => {
           const id = Number(url.replace(/\/+$/, "").split("/").pop());
-          return { id, name, sprite: SPRITE(id) };
+          return { id, name, sprite: SPRITE(id), types: [] };
         });
       },
     }),
