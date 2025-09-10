@@ -15,7 +15,8 @@ public class TeamService {
 
     private final TeamRepository teamRepository;
     private final TeamPokemonRepository teamPokemonRepository;
-    private final UserRepository userRepository; // NEW
+    private final UserRepository userRepository;
+    private static final int MAX_TEAMS = 8;
 
     public TeamService(
             TeamRepository teamRepository,
@@ -60,6 +61,11 @@ public class TeamService {
         if (teamRepository.existsById(request.getId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Team id already exists");
         }
+        long existing = teamRepository.countByUserId(userId);
+        if (existing >= MAX_TEAMS) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Max teams reached (8)");
+        }
+
 
         // Validate pokemon list (≤ 6 and no duplicate ids)
         List<TeamPokemonDTO> mons = request.getPokemon() != null ? request.getPokemon() : Collections.emptyList();
@@ -172,5 +178,38 @@ public class TeamService {
         // delete
         teamPokemonRepository.deleteByIdTeamIdAndIdPokemonId(teamId, pokemonId);
     }
+
+    @Transactional
+    public TeamDTO renameTeam(String requesterUserId, String teamId, String newName) {
+        if (newName == null || newName.isBlank() || newName.length() > 30) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Team name must be 1–30 characters");
+        }
+
+        TeamEntity team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found: " + teamId));
+
+        if (!team.getUserId().equals(requesterUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your team");
+        }
+
+        team.setName(newName);
+        teamRepository.save(team);
+
+        var mons = teamPokemonRepository.findAllByIdTeamId(teamId);
+        return TeamMapper.toDto(team, mons);
+    }
+
+    @Transactional
+    public void deleteTeam(String requesterUserId, String teamId) {
+        TeamEntity team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found: " + teamId));
+
+        if (!team.getUserId().equals(requesterUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your team");
+        }
+
+        teamRepository.deleteById(teamId);
+    }
+
 
 }

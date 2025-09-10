@@ -74,4 +74,32 @@ public class TeamController {
         teamService.removePokemonFromTeam(headerUserId, teamId, pokemonId);
     }
 
+    @PatchMapping("/teams/{teamId}")
+    public TeamDTO renameTeam(
+            @PathVariable String teamId,
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
+            @RequestBody com.tjw.poketeam.server_java.team.dto.TeamRenameRequest request
+    ) {
+        if (headerUserId == null || headerUserId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing X-User-Id header");
+        }
+        if (request == null || request.getName() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Body.name is required");
+        }
+        return teamService.renameTeam(headerUserId, teamId, request.getName());
+    }
+
+    @DeleteMapping("/teams/{teamId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteTeam(
+            @PathVariable String teamId,
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId
+    ) {
+        if (headerUserId == null || headerUserId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing X-User-Id header");
+        }
+        teamService.deleteTeam(headerUserId, teamId);
+    }
+
+
 }

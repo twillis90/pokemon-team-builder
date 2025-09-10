@@ -9,4 +9,5 @@ import java.util.List;
 public interface TeamRepository extends JpaRepository<TeamEntity, String> {
     List<TeamEntity> findAllByUserId(String userId);
     boolean existsById(String id);
+    long countByUserId(String userId);
 }
