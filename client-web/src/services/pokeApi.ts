@@ -13,7 +13,6 @@ type PokeListApiResponse = {
   results: { name: string; url: string }[];
 };
 
-// what we want to use in the UI
 export type PokeListItem = {
   id: number;
   name: string;
@@ -63,4 +62,5 @@ export const {
   useGetPokemonByNameQuery,
   useGetPokemonIdsByTypeQuery,
   useListAllPokemonQuery, 
+  useLazyGetPokemonByNameQuery,
 } = pokeApi;

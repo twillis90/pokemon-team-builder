@@ -39,12 +39,15 @@ export const teamsSlice = createSlice({
     },
     clearTeams: (state) => { state.teams = []; 
     },
+    setTeams: (state, action: PayloadAction<Team[]>) => {
+      state.teams = action.payload;
+    },
   }
 });
 
 export const {
   addTeam, editTeam, deleteTeam,
-  addPokemonToTeam, removePokemonFromTeam, clearTeams
+  addPokemonToTeam, removePokemonFromTeam, clearTeams, setTeams
 } = teamsSlice.actions;
 
 export const selectTeams = (root: { teams: TeamsState }) => root.teams.teams;

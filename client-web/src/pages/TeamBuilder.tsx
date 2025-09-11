@@ -1,14 +1,23 @@
-import { addPokemonToTeam, addTeam, selectTeams, type TeamPokemon } from "../teams/teamSlice";
+import { MAX_TEAMS, MAX_TEAM_SIZE } from "../library/constants";
 import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch } from "../store";
 import { useEffect, useState } from "react";
-import { useGetPokemonIdsByTypeQuery, useListAllPokemonQuery } from "../services/pokeApi";
+import { useGetPokemonIdsByTypeQuery, useListAllPokemonQuery, useLazyGetPokemonByNameQuery } from "../services/pokeApi";
+import {
+  addPokemonToTeam as addPokemonToTeamLocal,
+  removePokemonFromTeam as removePokemonFromTeamLocal,
+  addTeam,
+  selectTeams,
+  type TeamPokemon,
+  addPokemonToTeam,
+} from "../teams/teamSlice";
 
+import type { AppDispatch } from "../store";
 import Modal from "../components/common/Modal";
 import PokemonCard from "../features/pokemon/PokemonCard";
 import SearchControls from "../features/search/SearchControls";
+import { selectUser } from "../user/userSlice";
 import { skipToken } from "@reduxjs/toolkit/query";
-import { MAX_TEAMS, MAX_TEAM_SIZE } from "../library/constants";
+import { useAddPokemonToTeamMutation } from "../services/backendApi";
 
 export default function TeamBuilder() {
   const { data, isLoading, error } = useListAllPokemonQuery();
@@ -24,6 +33,9 @@ export default function TeamBuilder() {
   const [debouncedQuery, setDebouncedQuery] = useState(query);
   const [pokemonToAdd, setPokemonToAdd] = useState<TeamPokemon | null>(null);
   const [addPokemonModal, setAddPokemonModal] = useState<boolean>(false);
+  const user = useSelector(selectUser);
+  const [addPokemonReq] = useAddPokemonToTeamMutation();
+  const [getByName] = useLazyGetPokemonByNameQuery();
 
   const normalizedQuery = debouncedQuery.trim().toLowerCase();
 
@@ -78,11 +90,42 @@ export default function TeamBuilder() {
     setAddPokemonModal(false);
   };
 
-  const addPokemon = (teamId: string, pokemon: TeamPokemon) => {
-    dispatch(addPokemonToTeam({ teamId, pokemon }));
-    setAddPokemonModal(false);
-    setPokemonToAdd(null);
+  const addPokemon = async (teamId: string, pokemon: TeamPokemon) => {
+    if (!user?.id) return;
+    let ready: TeamPokemon = pokemon;
+    if (!ready.types || ready.types.length === 0) {
+      try {
+        const full = await getByName(pokemon.name).unwrap();
+        const typesFromDetail = full.types.map(t => t.type.name);
+        if (typesFromDetail.length === 0) {
+          console.error("No types for", pokemon.name);
+          return;
+        }
+        const sprite = ready.sprite || full.sprites.front_default || "";
+        ready = { ...ready, types: typesFromDetail, sprite };
+      } catch (e) {
+        console.error("Failed to fetch Pokémon details for types", e);
+        return;
+      }
+    }
+    dispatch(addPokemonToTeamLocal({ teamId, pokemon: ready }));
+    try {
+      await addPokemonReq({
+        userId: user.id,
+        teamId,
+        pokemon: ready,
+      }).unwrap();
+    } catch (err) {
+      dispatch(removePokemonFromTeamLocal({ teamId, pokemonId: ready.id }));
+      console.error("addPokemon failed", err);
+    } finally {
+      setAddPokemonModal(false);
+      setPokemonToAdd(null);
+    }
   };
+  
+  
+  
 
   const addNewTeam = () => {
     if (!pokemonToAdd || teams.length >= MAX_TEAMS) return;

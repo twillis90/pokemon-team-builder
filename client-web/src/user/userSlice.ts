@@ -1,5 +1,4 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Pokemon } from "../services/pokeApi";
 
 export interface User {
     id: string;
@@ -11,35 +10,33 @@ type UserState = {
     currentUser: User | null;
 };
 
-const initialState: UserState = {
-    currentUser: {
-        id: "u1",
-        displayName: "Ash Ketchum",
-        email: "ash@pallet.town",
-    }
+const DEFAULT_USER_ID: string = import.meta.env.VITE_STUB_USER_ID ?? "tj-dev";
+const DEFAULT_USER: User = {
+  id: DEFAULT_USER_ID,
+  displayName: "Dev Trainer",
+  email: `${DEFAULT_USER_ID}@example.test`,
 };
 
-export interface Team {
-    id: string;
-    name: string;
-    pokemon: Pokemon[]
-}
+const initialState: UserState = {
+  currentUser: DEFAULT_USER,
+};
+
 
 const userSlice = createSlice({
-    name: 'user',
+    name: "user",
     initialState,
     reducers: {
-        setUser(state, action: PayloadAction<User>) {
-            state.currentUser = action.payload;
-        },
-        updateUser(state, action: PayloadAction<{ displayName: string; email: string }>) {
-            if(!state.currentUser) return;
-            const { displayName, email } = action.payload;
-            state.currentUser.displayName = displayName;
-            state.currentUser.email = email;
-        },
+      setUser(state, action: PayloadAction<User>) {
+        state.currentUser = action.payload;
+      },
+      updateUser(state, action: PayloadAction<{ displayName: string; email: string }>) {
+        if (!state.currentUser) return;
+        const { displayName, email } = action.payload;
+        state.currentUser.displayName = displayName;
+        state.currentUser.email = email;
+      },
     },
-});
+  });
 
 export const { setUser, updateUser} = userSlice.actions;
 

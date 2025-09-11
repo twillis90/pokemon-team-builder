@@ -3,7 +3,7 @@ import "./index.css";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 
 import AppLayout from "./layouts/AppLayout";
-import AuthedLayout from "./layouts/AuthedLayout"; // ⬅️ add this
+import AuthedLayout from "./layouts/AuthedLayout";
 import Badges from "./pages/Badges";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
@@ -15,14 +15,12 @@ import { store } from "./store";
 
 const router = createBrowserRouter([
   {
-    element: <AppLayout />, // header + footer wrapper (yours)
+    element: <AppLayout />, 
     children: [
-      // public
       { path: "/", element: <Login /> },
 
-      // authed area (persistent right sidebar lives in AuthedLayout)
       {
-        element: <AuthedLayout />, // ⬅️ sidebar + <Outlet/>
+        element: <AuthedLayout />,
         children: [
           { path: "/builder", element: <TeamBuilder /> },
           { path: "/profile", element: <Profile /> },

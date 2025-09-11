@@ -1,10 +1,12 @@
-import { addTeam, deleteTeam, editTeam, removePokemonFromTeam, selectTeams } from "../teams/teamSlice";
+import { deleteTeam, removePokemonFromTeam, selectTeams, setTeams } from "../teams/teamSlice";
 import { selectUser, updateUser } from "../user/userSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 
 import Modal from "../components/common/Modal";
 import PokemonCard from "../features/pokemon/PokemonCard";
+import { useCreateTeamMutation, useListTeamsQuery, useRenameTeamMutation, type TeamDTO } from "../services/backendApi";
+import { nanoid } from "@reduxjs/toolkit";
 
 type ProfileForm = {
   displayName: string;
@@ -26,6 +28,20 @@ export default function Profile() {
   const [editModal, setEditModal] = useState<boolean>(false);
   const [teamToEdit, setTeamToEdit] = useState<string | null>(null);
   const [editTeamName, setEditTeamName] = useState<string>("");
+  const {data, isSuccess, refetch } = useListTeamsQuery(user?.id);
+  const [createTeam] = useCreateTeamMutation();
+  const [renameTeam] = useRenameTeamMutation();
+
+  
+useEffect(() => {
+  if (!isSuccess || !data) return;
+  const mapped = (data as TeamDTO[]).map(t => ({
+    id: t.id,
+    name: t.name,
+    pokemon: t.pokemon, // { id, name, sprite, types }
+  }));
+  dispatch(setTeams(mapped));
+}, [isSuccess, data, dispatch]);
 
   const handleEditClick = () => {
     setEditUserOpen(true);
@@ -55,8 +71,21 @@ export default function Profile() {
     setEditUserOpen(false);
   };
 
-  const handleAddTeam = () => {
-    dispatch(addTeam("New Team"));
+  const handleAddTeam = async () => {
+    if (!user?.id) return;
+    try {
+      await createTeam({
+        userId: user.id,
+        team: {
+          id: nanoid(),
+          name: "New Team",
+          pokemon: [],
+        },
+      }).unwrap();
+      await refetch();
+    } catch (e) {
+      console.error("createTeam failed", e);
+    }
   };
 
   const handleDeleteTeam = (id: string) => {
@@ -88,12 +117,21 @@ export default function Profile() {
     setEditModal(false);
   };
 
-  const handleTeamNameSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleTeamNameSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!teamToEdit) return;
-    dispatch(editTeam({ id: teamToEdit, name: editTeamName.trim() }));
-    setEditModal(false);
-    setTeamToEdit(null);
+    if (!teamToEdit || !user?.id) return;
+  
+    const newName = editTeamName.trim();
+    if (!newName) return;
+  
+    try {
+      await renameTeam({ userId: user.id, teamId: teamToEdit, name: newName }).unwrap();
+      await refetch();
+      setEditModal(false);
+      setTeamToEdit(null);
+    } catch (err) {
+      console.error("renameTeam failed", err);
+    }
   };
 
   const handleRemovePokemon = (teamId: string, pokemonId: number) => {
